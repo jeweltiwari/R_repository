@@ -1,0 +1,120 @@
+data <- Salaries
+library(dplyr)
+library(RSQLite)
+library(tidyr)
+library(ggplot2)
+library(readr)
+library(stringr)
+library(scales)
+library(mixtools)
+
+glimpse(Salaries)
+#1.Exploratory Data Analysis
+  #a. Non variable data
+non_numeric_vars <- names(data)[!sapply(Salaries,is.numeric)]
+data %>%
+  select(one_of(non_numeric_vars)) %>%
+  summarise_each(funs(unique_vars= length(unique(.))))
+head(Salaries$Benefits)
+head(unique(Salaries$Benefits))
+which.min(Salaries$Benefits == "")
+
+#changing the benefits column to numbers
+Salaries %>%
+  mutate(Benefits = as.numeric(Benefits))
+
+#update list of non numeric vars
+non_numeric_vars <- names(Salaries)[!sapply(Salaries,is.numeric)]
+
+
+Salaries %>%
+  group_by(Notes,Agency,Status) %>%
+  summarise(Frequency = n())
+
+Salaries <- Salaries %>%
+  select(-Agency, -Notes)
+
+Salaries %>%
+  group_by(JobTitle) %>%
+  summarise(Frequency = n()) %>%
+  arrange(desc(Frequency)) %>%
+  head
+#jobs that occur number of times
+Salaries %>%
+  group_by(JobTitle) %>%
+  summarise(Frequency = n()) %>%
+  mutate(OccursOnce = Frequency == 1) %>%
+  group_by(OccursOnce) %>%
+  summarise(Total = n())
+#Jobs that are unique
+Salaries %>%
+  filter(!duplicated(JobTitle)) %>%
+  head()
+#Compare the above with rest of the crowd in terms on Total Pay
+
+Salaries %>%
+  mutate(SharesTitle= duplicated(JobTitle)) %>%
+  ggplot(aes(x = TotalPay)) +
+  geom_density(aes(fill = SharesTitle), alpha = 0.6)
+
+#IT seems that people that do not share a title have higher pay
+
+Salaries %>%
+  select((-one_of(non_numeric_vars))) %>%
+  summary
+
+table(duplicated(Salaries$Id))
+
+Salaries %>%
+  filter (TotalPay < 0)
+
+Salaries %>%
+  filter (TotalPay == 0)
+
+Salaries %>%
+  filter (TotalPay > 0, TotalPay < 100)
+
+Salaries %>%
+  ggplot(aes(x = TotalPay)) +
+  geom_density(aes(fill = Status), alpha = 0.6)
+
+#need to analyze FT Employees
+ft <- Salaries %>% filter(Status == "FT")
+dim(ft)
+#need to analyse how they get split based on year
+
+ft %>%
+  group_by(Year) %>%
+  summarise(Frequency = n())
+#need to check what is filled in other years
+
+Salaries %>%
+  group_by(Year, Status) %>%
+  summarise(Frequency= n()) %>%
+  spread(Year, Frequency)
+
+Salaries %>%
+  filter(Status == "", Year == 2014)
+
+ft %>%
+  ggplot(aes(x = BasePay)) +
+  geom_density(fill = "grey40")
+
+
+ft %>%
+  ggplot(aes(x = OvertimePay)) +
+  geom_density(fill = "grey60")
+
+
+ft %>%
+  ggplot(aes(x = Benefits)) +
+  geom_density(fill = "grey60")
+
+
+#how many people doing FT work
+(length(unique(ft$JobTitle)))
+#unique job titles
+head(unique((ft$JobTitle)))
+
+
+
